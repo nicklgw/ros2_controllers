@@ -291,10 +291,13 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
   else if (config_type_ == TRICYCLE_CONFIG)
   {
     std::vector<double> traction_commands;
-    std::vector<double> steering_commands;    
+    std::vector<double> steering_commands;
+
     JointCommand joint_command;
     joint_command.steering_command = phi;
-
+    auto & last_command = previous_commands_.back();
+    auto & second_to_last_command = previous_commands_.front();
+    
     if (v_bx == 0 && omega_bz != 0) // 当线速度Vx=0，W!=0时，车体自旋，逆解到左右驱动轮
     {
       // Compute wheels velocities:
@@ -320,11 +323,8 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
       joint_command.traction_left_command = Wl * wheel_radius_;
     }
 
-    auto & last_command = previous_commands_.back();
-    auto & second_to_last_command = previous_commands_.front();
-
-    traction_right_limiter_.limit(joint_command.traction_right_command, last_command.traction_right_command, second_to_last_command.traction_right_command, dt);
-    traction_left_limiter_.limit(joint_command.traction_left_command, last_command.traction_left_command, second_to_last_command.traction_left_command, dt);
+    traction_limiter_.limit(joint_command.traction_right_command, last_command.traction_right_command, second_to_last_command.traction_right_command, dt);
+    traction_limiter_.limit(joint_command.traction_left_command, last_command.traction_left_command, second_to_last_command.traction_left_command, dt);
     steering_limiter_.limit(joint_command.steering_command, last_command.steering_command, second_to_last_command.steering_command, dt);
 
     traction_commands = {joint_command.traction_right_command / wheel_radius_, joint_command.traction_left_command / wheel_radius_};

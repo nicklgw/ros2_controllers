@@ -275,14 +275,13 @@ private:
   rcppmath::RollingMeanAccumulator<double> angular_acc_;
 
 public:  
-  tricycle_controller::TractionLimiter traction_right_limiter_;
-  tricycle_controller::TractionLimiter traction_left_limiter_;
+  tricycle_controller::TractionLimiter traction_limiter_;
   tricycle_controller::SteeringLimiter steering_limiter_;
   struct JointCommand
   {
-    double traction_right_command{0.0}; // 驱动右轮线速度m/s
-    double traction_left_command{0.0};  // 驱动左轮线速度m/s
-    double steering_command{0.0};       // 方向舵角rad
+    double traction_right_command{0.0}; // 驱动右轮线速度 m/s
+    double traction_left_command{0.0};  // 驱动左轮线速度 m/s
+    double steering_command{0.0};       // 转向轮中线舵角 rad
   };
   std::queue<JointCommand> previous_commands_;  // last two commands
 };

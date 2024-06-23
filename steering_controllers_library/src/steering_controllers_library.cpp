@@ -107,10 +107,9 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
     front_wheels_state_names_ = params_.front_wheels_names;
   }
 
-
   try
   {
-    odometry_.traction_right_limiter_ = tricycle_controller::TractionLimiter(
+    odometry_.traction_limiter_ = tricycle_controller::TractionLimiter(
       params_.traction.min_velocity,
       params_.traction.max_velocity,
       params_.traction.min_acceleration,
@@ -119,8 +118,6 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
       params_.traction.max_deceleration,
       params_.traction.min_jerk,
       params_.traction.max_jerk);
-
-      odometry_.traction_left_limiter_ = odometry_.traction_right_limiter_;
   }
   catch (const std::invalid_argument & e)
   {
