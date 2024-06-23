@@ -20,11 +20,15 @@
 
 #include <tuple>
 #include <vector>
+#include <queue>
 
 #include "realtime_tools/realtime_buffer.h"
 #include "realtime_tools/realtime_publisher.h"
 
 #include "rcppmath/rolling_mean_accumulator.hpp"
+
+#include "tricycle_controller/steering_limiter.hpp"
+#include "tricycle_controller/traction_limiter.hpp"
 
 namespace steering_odometry
 {
@@ -189,6 +193,16 @@ public:
     const double v_bx, const double omega_bz);
 
   /**
+   * \brief Calculates inverse kinematics for the desired linear and angular velocities
+   * \param v_bx     Desired linear velocity of the robot in x_b-axis direction
+   * \param omega_bz Desired angular velocity of the robot around x_z-axis
+   * \param dt       time difference to last call
+   * \return Tuple of velocity commands and steering commands
+   */
+  std::tuple<std::vector<double>, std::vector<double>> get_commands(
+    const double v_bx, const double omega_bz, const double dt);
+
+  /**
    *  \brief Reset poses, heading, and accumulators
    */
   void reset_odometry();
@@ -259,6 +273,18 @@ private:
   size_t velocity_rolling_window_size_;
   rcppmath::RollingMeanAccumulator<double> linear_acc_;
   rcppmath::RollingMeanAccumulator<double> angular_acc_;
+
+public:  
+  tricycle_controller::TractionLimiter traction_right_limiter_;
+  tricycle_controller::TractionLimiter traction_left_limiter_;
+  tricycle_controller::SteeringLimiter steering_limiter_;
+  struct JointCommand
+  {
+    double traction_right_command{0.0}; // 驱动右轮线速度m/s
+    double traction_left_command{0.0};  // 驱动左轮线速度m/s
+    double steering_command{0.0};       // 方向舵角rad
+  };
+  std::queue<JointCommand> previous_commands_;  // last two commands
 };
 }  // namespace steering_odometry
 

@@ -216,15 +216,7 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
   {
     std::vector<double> traction_commands;
     std::vector<double> steering_commands;
-
-    if (v_bx == 0 && omega_bz != 0) // 当线速度Vx=0，W!=0时，车体自旋，逆解到左右驱动轮
-    {
-      // Compute wheels velocities:
-      const double Wr = + omega_bz * wheel_track_ / 2.0 / wheel_radius_;
-      const double Wl = - omega_bz * wheel_track_ / 2.0 / wheel_radius_;
-      traction_commands = {Wr, Wl};
-    }
-    else if (fabs(steer_pos_) < 1e-6)
+    if (fabs(steer_pos_) < 1e-6)
     {
       traction_commands = {Ws, Ws};
     }
@@ -236,6 +228,111 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
       traction_commands = {Wr, Wl};
     }
     steering_commands = {phi};
+    return std::make_tuple(traction_commands, steering_commands);
+  }
+  else if (config_type_ == ACKERMANN_CONFIG)
+  {
+    std::vector<double> traction_commands;
+    std::vector<double> steering_commands;
+    if (fabs(steer_pos_) < 1e-6)
+    {
+      traction_commands = {Ws, Ws};
+      steering_commands = {phi, phi};
+    }
+    else
+    {
+      const double turning_radius = wheelbase_ / std::tan(steer_pos_);
+      const double Wr = Ws * (turning_radius + wheel_track_ * 0.5) / turning_radius;
+      const double Wl = Ws * (turning_radius - wheel_track_ * 0.5) / turning_radius;
+      traction_commands = {Wr, Wl};
+
+      const double numerator = 2 * wheelbase_ * std::sin(phi);
+      const double denominator_first_member = 2 * wheelbase_ * std::cos(phi);
+      const double denominator_second_member = wheel_track_ * std::sin(phi);
+
+      const double alpha_r =
+        std::atan2(numerator, denominator_first_member + denominator_second_member);
+      const double alpha_l =
+        std::atan2(numerator, denominator_first_member - denominator_second_member);
+      steering_commands = {alpha_r, alpha_l};
+    }
+    return std::make_tuple(traction_commands, steering_commands);
+  }
+  else
+  {
+    throw std::runtime_error("Config not implemented");
+  }
+}
+
+std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_commands(
+  const double v_bx, const double omega_bz, const double dt)
+{
+  // desired wheel speed and steering angle of the middle of traction and steering axis
+  double Ws, phi;
+
+  if (v_bx == 0 && omega_bz != 0)
+  {
+    // TODO(anyone) would be only valid if traction is on the steering axis -> tricycle_controller
+    phi = omega_bz > 0 ? M_PI_2 : -M_PI_2;
+    Ws = abs(omega_bz) * wheelbase_ / wheel_radius_;
+  }
+  else
+  {
+    phi = SteeringOdometry::convert_twist_to_steering_angle(v_bx, omega_bz);
+    Ws = v_bx / (wheel_radius_ * std::cos(steer_pos_));
+  }
+
+  if (config_type_ == BICYCLE_CONFIG)
+  {
+    std::vector<double> traction_commands = {Ws};
+    std::vector<double> steering_commands = {phi};
+    return std::make_tuple(traction_commands, steering_commands);
+  }
+  else if (config_type_ == TRICYCLE_CONFIG)
+  {
+    std::vector<double> traction_commands;
+    std::vector<double> steering_commands;    
+    JointCommand joint_command;
+    joint_command.steering_command = phi;
+
+    if (v_bx == 0 && omega_bz != 0) // 当线速度Vx=0，W!=0时，车体自旋，逆解到左右驱动轮
+    {
+      // Compute wheels velocities:
+      const double Wr = + omega_bz * wheel_track_ / 2.0 / wheel_radius_;
+      const double Wl = - omega_bz * wheel_track_ / 2.0 / wheel_radius_;
+      // traction_commands = {Wr, Wl};
+      joint_command.traction_right_command = Wr * wheel_radius_;
+      joint_command.traction_left_command = Wl * wheel_radius_;
+    }
+    else if (fabs(steer_pos_) < 1e-6)
+    {
+      // traction_commands = {Ws, Ws};
+      joint_command.traction_right_command = Ws * wheel_radius_;
+      joint_command.traction_left_command = Ws * wheel_radius_;
+    }
+    else
+    {
+      const double turning_radius = wheelbase_ / std::tan(steer_pos_);
+      const double Wr = Ws * (turning_radius + wheel_track_ * 0.5) / turning_radius;
+      const double Wl = Ws * (turning_radius - wheel_track_ * 0.5) / turning_radius;
+      // traction_commands = {Wr, Wl};
+      joint_command.traction_right_command = Wr * wheel_radius_;
+      joint_command.traction_left_command = Wl * wheel_radius_;
+    }
+
+    auto & last_command = previous_commands_.back();
+    auto & second_to_last_command = previous_commands_.front();
+
+    traction_right_limiter_.limit(joint_command.traction_right_command, last_command.traction_right_command, second_to_last_command.traction_right_command, dt);
+    traction_left_limiter_.limit(joint_command.traction_left_command, last_command.traction_left_command, second_to_last_command.traction_left_command, dt);
+    steering_limiter_.limit(joint_command.steering_command, last_command.steering_command, second_to_last_command.steering_command, dt);
+
+    traction_commands = {joint_command.traction_right_command / wheel_radius_, joint_command.traction_left_command / wheel_radius_};
+    steering_commands = {joint_command.steering_command};
+
+    previous_commands_.pop();
+    previous_commands_.emplace(joint_command);
+
     return std::make_tuple(traction_commands, steering_commands);
   }
   else if (config_type_ == ACKERMANN_CONFIG)

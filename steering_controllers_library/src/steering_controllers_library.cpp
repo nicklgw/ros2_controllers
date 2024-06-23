@@ -107,6 +107,54 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
     front_wheels_state_names_ = params_.front_wheels_names;
   }
 
+
+  try
+  {
+    odometry_.traction_right_limiter_ = tricycle_controller::TractionLimiter(
+      params_.traction.min_velocity,
+      params_.traction.max_velocity,
+      params_.traction.min_acceleration,
+      params_.traction.max_acceleration,
+      params_.traction.min_deceleration,
+      params_.traction.max_deceleration,
+      params_.traction.min_jerk,
+      params_.traction.max_jerk);
+
+      odometry_.traction_left_limiter_ = odometry_.traction_right_limiter_;
+  }
+  catch (const std::invalid_argument & e)
+  {
+    RCLCPP_ERROR(get_node()->get_logger(), "Error configuring traction limiter: %s", e.what());
+    return CallbackReturn::ERROR;
+  }
+
+  try
+  {
+    odometry_.steering_limiter_ = tricycle_controller::SteeringLimiter(
+      params_.steering.min_position,
+      params_.steering.max_position,
+      params_.steering.min_velocity,
+      params_.steering.max_velocity,
+      params_.steering.min_acceleration,
+      params_.steering.max_acceleration);
+  }
+  catch (const std::invalid_argument & e)
+  {
+    fprintf(
+      stderr, "Error configuring steering limiter: %s \n",
+      e.what());
+    return controller_interface::CallbackReturn::ERROR;
+  }
+
+  // release the old queue
+  std::queue<steering_odometry::SteeringOdometry::JointCommand> empty_joint_command_queue;
+  std::swap(odometry_.previous_commands_, empty_joint_command_queue);
+
+  // Fill last two commands with default constructed commands
+  steering_odometry::SteeringOdometry::JointCommand empty_joint_command;
+  odometry_.previous_commands_.emplace(empty_joint_command);
+  odometry_.previous_commands_.emplace(empty_joint_command);
+
   // topics QoS
   auto subscribers_qos = rclcpp::SystemDefaultsQoS();
   subscribers_qos.keep_last(1);
@@ -452,7 +500,7 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
     last_angular_velocity_ = reference_interfaces_[1];
 
     auto [traction_commands, steering_commands] =
-      odometry_.get_commands(last_linear_velocity_, last_angular_velocity_);
+      odometry_.get_commands(last_linear_velocity_, last_angular_velocity_, period.seconds());
     if (params_.front_steering)
     {
       for (size_t i = 0; i < params_.rear_wheels_names.size(); i++)

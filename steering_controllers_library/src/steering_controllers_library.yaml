@@ -120,3 +120,63 @@ steering_controllers_library:
     use_stamped_vel is true then ``geometry_msgs::msg::TwistStamped`` is taken as vel msg type",
     read_only: false,
   }
+
+  traction:
+    min_velocity: {
+      type: double,
+      default_value: .NAN,
+    }
+    max_velocity: {
+      type: double,
+      default_value: .NAN,
+    }
+    min_acceleration: {
+      type: double,
+      default_value: .NAN,
+    }
+    max_acceleration: {
+      type: double,
+      default_value: .NAN,
+    }
+    min_deceleration: {
+      type: double,
+      default_value: .NAN,
+    }
+    max_deceleration: {
+      type: double,
+      default_value: .NAN,
+    }
+    min_jerk: {
+      type: double,
+      default_value: .NAN,
+    }
+    max_jerk: {
+      type: double,
+      default_value: .NAN,
+    }
+
+  steering:
+    min_position: {
+      type: double,
+      default_value: .NAN,
+    }
+    max_position: {
+      type: double,
+      default_value: .NAN,
+    }
+    min_velocity: {
+      type: double,
+      default_value: .NAN,
+    }
+    max_velocity: {
+      type: double,
+      default_value: .NAN,
+    }
+    min_acceleration: {
+      type: double,
+      default_value: .NAN,
+    }
+    max_acceleration: {
+      type: double,
+      default_value: .NAN,
+    }
