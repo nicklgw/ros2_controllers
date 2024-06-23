@@ -216,7 +216,15 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
   {
     std::vector<double> traction_commands;
     std::vector<double> steering_commands;
-    if (fabs(steer_pos_) < 1e-6)
+
+    if (v_bx == 0 && omega_bz != 0) // 当线速度Vx=0，W!=0时，车体自旋，逆解到左右驱动轮
+    {
+      // Compute wheels velocities:
+      const double Wr = + omega_bz * wheel_track_ / 2.0 / wheel_radius_;
+      const double Wl = - omega_bz * wheel_track_ / 2.0 / wheel_radius_;
+      traction_commands = {Wr, Wl};
+    }
+    else if (fabs(steer_pos_) < 1e-6)
     {
       traction_commands = {Ws, Ws};
     }
