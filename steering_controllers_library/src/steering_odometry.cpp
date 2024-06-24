@@ -274,6 +274,7 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
   {
     // TODO(anyone) would be only valid if traction is on the steering axis -> tricycle_controller
     phi = omega_bz > 0 ? M_PI_2 : -M_PI_2;
+    phi = 0.0; // 实车测试，车体自旋时，不打舵，可略微减少驱动轮阻力
     Ws = abs(omega_bz) * wheelbase_ / wheel_radius_;
   }
   else
