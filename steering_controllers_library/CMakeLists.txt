@@ -18,6 +18,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   rclcpp_lifecycle
   realtime_tools
   std_srvs
+  std_msgs
   tf2
   tf2_msgs
   tf2_geometry_msgs

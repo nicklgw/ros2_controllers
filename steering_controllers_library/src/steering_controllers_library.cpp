@@ -178,6 +178,14 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
   reset_controller_reference_msg(msg, get_node());
   input_ref_.writeFromNonRT(msg);
 
+  emergency_subscriber_ =
+    get_node()->create_subscription<std_msgs::msg::Bool>(
+      "~/emergency_cmd", rclcpp::SystemDefaultsQoS(),
+      [this](const std::shared_ptr<std_msgs::msg::Bool> msg) -> void
+      {
+        is_emergency_ = msg->data;
+      });
+
   try
   {
     // Odom state publisher
@@ -462,16 +470,9 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
     auto current_ref = *(input_ref_.readFromRT());
     const auto age_of_last_command = time - (current_ref)->header.stamp;
 
-    // send message only if there is no timeout
-    if (age_of_last_command <= ref_timeout_ || ref_timeout_ == rclcpp::Duration::from_seconds(0))
-    {
-      if (!std::isnan(current_ref->twist.linear.x) && !std::isnan(current_ref->twist.angular.z))
-      {
-        reference_interfaces_[0] = current_ref->twist.linear.x;
-        reference_interfaces_[1] = current_ref->twist.angular.z;
-      }
-    }
-    else
+    bool cmd_vel_timeout = (age_of_last_command > ref_timeout_) && (rclcpp::Duration::from_seconds(0) != ref_timeout_);
+    // Brake if cmd_vel has timeout, override the stored command
+    if (cmd_vel_timeout || is_emergency_)
     {
       if (!std::isnan(current_ref->twist.linear.x) && !std::isnan(current_ref->twist.angular.z))
       {
@@ -479,6 +480,15 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
         reference_interfaces_[1] = 0.0;
         current_ref->twist.linear.x = std::numeric_limits<double>::quiet_NaN();
         current_ref->twist.angular.z = std::numeric_limits<double>::quiet_NaN();
+      }
+      RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), 1000, "Brake if cmd_vel has timeout: %d. Emergency Stopping, emergency: %d.", cmd_vel_timeout, is_emergency_.load());
+    }
+    else // send message only if there is no timeout
+    {
+      if (!std::isnan(current_ref->twist.linear.x) && !std::isnan(current_ref->twist.angular.z))
+      {
+        reference_interfaces_[0] = current_ref->twist.linear.x;
+        reference_interfaces_[1] = current_ref->twist.angular.z;
       }
     }
   }

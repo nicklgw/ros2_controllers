@@ -39,6 +39,7 @@
 #include "control_msgs/msg/steering_controller_status.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
 
@@ -137,6 +138,9 @@ protected:
 
   std::vector<std::string> rear_wheels_state_names_;
   std::vector<std::string> front_wheels_state_names_;
+
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr emergency_subscriber_ = nullptr;
+  std::atomic<bool> is_emergency_{false};
 
 private:
   // callback for topic interface
