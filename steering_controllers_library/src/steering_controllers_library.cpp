@@ -297,11 +297,11 @@ void SteeringControllersLibrary::reference_callback(
 void SteeringControllersLibrary::reference_callback_unstamped(
   const std::shared_ptr<geometry_msgs::msg::Twist> msg)
 {
-  RCLCPP_WARN(
-    get_node()->get_logger(),
-    "Use of Twist message without stamped is deprecated and it will be removed in ROS 2 J-Turtle "
-    "version. Use '~/reference' topic with 'geometry_msgs::msg::TwistStamped' message type in the "
-    "future.");
+  // RCLCPP_WARN(
+  //   get_node()->get_logger(),
+  //   "Use of Twist message without stamped is deprecated and it will be removed in ROS 2 J-Turtle "
+  //   "version. Use '~/reference' topic with 'geometry_msgs::msg::TwistStamped' message type in the "
+  //   "future.");
   auto twist_stamped = *(input_ref_.readFromNonRT());
   twist_stamped->header.stamp = get_node()->now();
   // if no timestamp provided use current time for command timestamp
@@ -481,7 +481,7 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
         current_ref->twist.linear.x = std::numeric_limits<double>::quiet_NaN();
         current_ref->twist.angular.z = std::numeric_limits<double>::quiet_NaN();
       }
-      RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(), 1000, "Brake if cmd_vel has timeout: %d. Emergency Stopping, emergency: %d.", cmd_vel_timeout, is_emergency_.load());
+      RCLCPP_INFO(get_node()->get_logger(), "Brake if cmd_vel has timeout: %d. Emergency Stopping, emergency: %d.", cmd_vel_timeout, is_emergency_.load());
     }
     else // send message only if there is no timeout
     {
