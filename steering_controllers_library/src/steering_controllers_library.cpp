@@ -180,7 +180,7 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
 
   emergency_subscriber_ =
     get_node()->create_subscription<std_msgs::msg::Bool>(
-      "~/emergency_cmd", rclcpp::SystemDefaultsQoS(),
+      "~/emergency_cmd", subscribers_qos,
       [this](const std::shared_ptr<std_msgs::msg::Bool> msg) -> void
       {
         is_emergency_ = msg->data;
