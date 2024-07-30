@@ -152,6 +152,11 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
   odometry_.previous_commands_.emplace(empty_joint_command);
   odometry_.previous_commands_.emplace(empty_joint_command);
 
+  std::shared_ptr<ControllerTwistReferenceMsg> msg =
+    std::make_shared<ControllerTwistReferenceMsg>();
+  reset_controller_reference_msg(msg, get_node());
+  input_ref_.writeFromNonRT(msg);
+
   // topics QoS
   auto subscribers_qos = rclcpp::SystemDefaultsQoS();
   subscribers_qos.keep_last(1);
@@ -173,10 +178,7 @@ controller_interface::CallbackReturn SteeringControllersLibrary::on_configure(
         &SteeringControllersLibrary::reference_callback_unstamped, this, std::placeholders::_1));
   }
 
-  std::shared_ptr<ControllerTwistReferenceMsg> msg =
-    std::make_shared<ControllerTwistReferenceMsg>();
-  reset_controller_reference_msg(msg, get_node());
-  input_ref_.writeFromNonRT(msg);
+
 
   emergency_subscriber_ =
     get_node()->create_subscription<std_msgs::msg::Bool>(
