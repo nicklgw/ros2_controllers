@@ -279,9 +279,11 @@ public:
   tricycle_controller::SteeringLimiter steering_limiter_;
   struct JointCommand
   {
-    double traction_right_command{0.0}; // 驱动右轮线速度 m/s
-    double traction_left_command{0.0};  // 驱动左轮线速度 m/s
-    double steering_command{0.0};       // 转向轮中线舵角 rad
+    double traction_right_command{0.0};       // 驱动前右轮线速度 m/s
+    double traction_left_command{0.0};        // 驱动前左轮线速度 m/s
+    double traction_rear_right_command{0.0};  // 驱动后右轮线速度 m/s
+    double traction_rear_left_command{0.0};   // 驱动后左轮线速度 m/s
+    double steering_command{0.0};           // 转向轮中线舵角 rad
   };
   std::queue<JointCommand> previous_commands_;  // last two commands
 };

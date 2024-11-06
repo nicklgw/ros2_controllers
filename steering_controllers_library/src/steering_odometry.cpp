@@ -306,29 +306,44 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
       const double Wl = - omega_bz * wheel_track_ / 2.0 / wheel_radius_;
       // traction_commands = {Wr, Wl};
       joint_command.traction_right_command = Wr * wheel_radius_;
+      joint_command.traction_rear_right_command = Wr * wheel_radius_;
       joint_command.traction_left_command = Wl * wheel_radius_;
+      joint_command.traction_rear_left_command = Wl * wheel_radius_;
     }
     else if (fabs(steer_pos_) < 1e-6)
     {
       // traction_commands = {Ws, Ws};
       joint_command.traction_right_command = Ws * wheel_radius_;
       joint_command.traction_left_command = Ws * wheel_radius_;
+      joint_command.traction_rear_right_command = Ws * wheel_radius_;
+      joint_command.traction_rear_left_command = Ws * wheel_radius_;
     }
     else
     {
       const double turning_radius = wheelbase_ / std::tan(steer_pos_);
-      const double Wr = Ws * (turning_radius + wheel_track_ * 0.5) / turning_radius;
-      const double Wl = Ws * (turning_radius - wheel_track_ * 0.5) / turning_radius;
+      const double Rr = turning_radius + wheel_track_ * 0.5; // 前右转弯半径 right
+      const double Rl = turning_radius - wheel_track_ * 0.5; // 前左转弯半径 left
+      const double Wr = Ws * Rr / turning_radius;
+      const double Wl = Ws * Rl / turning_radius;
       // traction_commands = {Wr, Wl};
       joint_command.traction_right_command = Wr * wheel_radius_;
       joint_command.traction_left_command = Wl * wheel_radius_;
+
+      const double Rrr = std::hypot(wheelbase_, turning_radius + wheel_track_ * 0.5); // 后右转弯半径 rear_right
+      const double Rrl = std::hypot(wheelbase_, turning_radius - wheel_track_ * 0.5); // 后左转弯半径 rear_left
+      const double Wrr = Ws * Rrr / turning_radius;
+      const double Wrl = Ws * Rrl / turning_radius;
+      joint_command.traction_rear_right_command = Wrr * wheel_radius_;
+      joint_command.traction_rear_left_command = Wrl * wheel_radius_;
     }
 
     traction_limiter_.limit(joint_command.traction_right_command, last_command.traction_right_command, second_to_last_command.traction_right_command, dt);
     traction_limiter_.limit(joint_command.traction_left_command, last_command.traction_left_command, second_to_last_command.traction_left_command, dt);
+    traction_limiter_.limit(joint_command.traction_rear_right_command, last_command.traction_rear_right_command, second_to_last_command.traction_rear_right_command, dt);
+    traction_limiter_.limit(joint_command.traction_rear_left_command, last_command.traction_rear_left_command, second_to_last_command.traction_rear_left_command, dt);
     steering_limiter_.limit(joint_command.steering_command, last_command.steering_command, second_to_last_command.steering_command, dt);
 
-    traction_commands = {joint_command.traction_right_command / wheel_radius_, joint_command.traction_left_command / wheel_radius_};
+    traction_commands = {joint_command.traction_right_command / wheel_radius_, joint_command.traction_left_command / wheel_radius_, joint_command.traction_rear_right_command / wheel_radius_, joint_command.traction_rear_left_command / wheel_radius_};
     steering_commands = {joint_command.steering_command};
 
     previous_commands_.pop();
