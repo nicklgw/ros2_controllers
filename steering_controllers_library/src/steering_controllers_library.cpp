@@ -528,14 +528,14 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
         {
           command_interfaces_[i].set_value(traction_commands[i]);
 
-          RCLCPP_ERROR(get_node()->get_logger(), "command_interfaces_[%d] name:%s set_value:%f", i, command_interfaces_[i].get_name().c_str(), traction_commands[i]);
+          // RCLCPP_ERROR(get_node()->get_logger(), "command_interfaces_[%d] name:%s set_value:%f", i, command_interfaces_[i].get_name().c_str(), traction_commands[i]);
         }
         for (size_t i = 0; i < params_.rear_wheels_names.size(); i++)
         {
           size_t index = i + params_.front_wheels_names.size();          
           command_interfaces_[index].set_value(steering_commands[i]);
 
-          RCLCPP_ERROR(get_node()->get_logger(), "command_interfaces_[%d] name:%s set_value:%f", index, command_interfaces_[index].get_name().c_str(), steering_commands[i]);
+          // RCLCPP_ERROR(get_node()->get_logger(), "command_interfaces_[%d] name:%s set_value:%f", index, command_interfaces_[index].get_name().c_str(), steering_commands[i]);
         }
       }
     }
