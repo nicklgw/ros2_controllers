@@ -507,7 +507,7 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
     // store (for open loop odometry) and set commands
     last_linear_velocity_ = reference_interfaces_[0];
     last_angular_velocity_ = reference_interfaces_[1];
-
+    
     auto [traction_commands, steering_commands] =
       odometry_.get_commands(last_linear_velocity_, last_angular_velocity_, period.seconds());
     if (params_.front_steering)
@@ -527,11 +527,15 @@ controller_interface::return_type SteeringControllersLibrary::update_and_write_c
         for (size_t i = 0; i < params_.front_wheels_names.size(); i++)
         {
           command_interfaces_[i].set_value(traction_commands[i]);
+
+          RCLCPP_ERROR(get_node()->get_logger(), "command_interfaces_[%d] name:%s set_value:%f", i, command_interfaces_[i].get_name().c_str(), traction_commands[i]);
         }
         for (size_t i = 0; i < params_.rear_wheels_names.size(); i++)
         {
-          command_interfaces_[i + params_.front_wheels_names.size()].set_value(
-            steering_commands[i]);
+          size_t index = i + params_.front_wheels_names.size();          
+          command_interfaces_[index].set_value(steering_commands[i]);
+
+          RCLCPP_ERROR(get_node()->get_logger(), "command_interfaces_[%d] name:%s set_value:%f", index, command_interfaces_[index].get_name().c_str(), steering_commands[i]);
         }
       }
     }

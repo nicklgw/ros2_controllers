@@ -314,8 +314,8 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
     {
       // traction_commands = {Ws, Ws};
       joint_command.traction_right_command = Ws * wheel_radius_;
-      joint_command.traction_left_command = Ws * wheel_radius_;
       joint_command.traction_rear_right_command = Ws * wheel_radius_;
+      joint_command.traction_left_command = Ws * wheel_radius_;
       joint_command.traction_rear_left_command = Ws * wheel_radius_;
     }
     else
@@ -328,9 +328,10 @@ std::tuple<std::vector<double>, std::vector<double>> SteeringOdometry::get_comma
       // traction_commands = {Wr, Wl};
       joint_command.traction_right_command = Wr * wheel_radius_;
       joint_command.traction_left_command = Wl * wheel_radius_;
-
-      const double Rrr = std::hypot(wheelbase_, turning_radius + wheel_track_ * 0.5); // 后右转弯半径 rear_right
-      const double Rrl = std::hypot(wheelbase_, turning_radius - wheel_track_ * 0.5); // 后左转弯半径 rear_left
+      
+      const double sign = std::copysign(1.0, turning_radius);
+      const double Rrr = sign * std::hypot(wheelbase_, turning_radius + wheel_track_ * 0.5); // 后右转弯半径 rear_right
+      const double Rrl = sign * std::hypot(wheelbase_, turning_radius - wheel_track_ * 0.5); // 后左转弯半径 rear_left
       const double Wrr = Ws * Rrr / turning_radius;
       const double Wrl = Ws * Rrl / turning_radius;
       joint_command.traction_rear_right_command = Wrr * wheel_radius_;
