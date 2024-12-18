@@ -34,6 +34,7 @@
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "hardware_interface/handle.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/state.hpp"
@@ -132,6 +133,9 @@ protected:
   realtime_tools::RealtimeBox<std::shared_ptr<Twist>> received_velocity_msg_ptr_{nullptr};
 
   std::queue<Twist> previous_commands_;  // last two commands
+
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr emergency_subscriber_ = nullptr;
+  std::atomic<bool> is_emergency_{false};
 
   // speed limiters
   SpeedLimiter limiter_linear_;

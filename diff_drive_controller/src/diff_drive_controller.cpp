@@ -122,8 +122,10 @@ controller_interface::return_type DiffDriveController::update(
   }
 
   const auto age_of_last_command = time - last_command_msg->header.stamp;
+  bool cmd_vel_timeout = (age_of_last_command > cmd_vel_timeout_);
+
   // Brake if cmd_vel has timeout, override the stored command
-  if (age_of_last_command > cmd_vel_timeout_)
+  if (cmd_vel_timeout || is_emergency_)
   {
     last_command_msg->twist.linear.x = 0.0;
     last_command_msg->twist.angular.z = 0.0;
@@ -339,11 +341,15 @@ controller_interface::CallbackReturn DiffDriveController::on_configure(
   previous_commands_.emplace(empty_twist);
   previous_commands_.emplace(empty_twist);
 
+  auto subscribers_qos = rclcpp::SystemDefaultsQoS();
+  subscribers_qos.keep_last(1);
+  subscribers_qos.best_effort();
+
   // initialize command subscriber
   if (use_stamped_vel_)
   {
     velocity_command_subscriber_ = get_node()->create_subscription<Twist>(
-      DEFAULT_COMMAND_TOPIC, rclcpp::SystemDefaultsQoS(),
+      DEFAULT_COMMAND_TOPIC, subscribers_qos,
       [this](const std::shared_ptr<Twist> msg) -> void
       {
         if (!subscriber_is_active_)
@@ -367,7 +373,7 @@ controller_interface::CallbackReturn DiffDriveController::on_configure(
   {
     velocity_command_unstamped_subscriber_ =
       get_node()->create_subscription<geometry_msgs::msg::Twist>(
-        DEFAULT_COMMAND_UNSTAMPED_TOPIC, rclcpp::SystemDefaultsQoS(),
+        DEFAULT_COMMAND_UNSTAMPED_TOPIC, subscribers_qos,
         [this](const std::shared_ptr<geometry_msgs::msg::Twist> msg) -> void
         {
           if (!subscriber_is_active_)
@@ -384,6 +390,14 @@ controller_interface::CallbackReturn DiffDriveController::on_configure(
           twist_stamped->header.stamp = get_node()->get_clock()->now();
         });
   }
+
+  emergency_subscriber_ =
+    get_node()->create_subscription<std_msgs::msg::Bool>(
+      "~/emergency_cmd", subscribers_qos,
+      [this](const std::shared_ptr<std_msgs::msg::Bool> msg) -> void
+      {
+        is_emergency_ = msg->data;
+      });
 
   // initialize odometry publisher and message
   odometry_publisher_ = get_node()->create_publisher<nav_msgs::msg::Odometry>(
