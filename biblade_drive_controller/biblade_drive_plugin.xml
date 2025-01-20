@@ -1,0 +1,7 @@
+<library path="biblade_drive_controller">
+  <class name="biblade_drive_controller/BibladeDriveController" type="biblade_drive_controller::BibladeDriveController" base_class_type="controller_interface::ControllerInterface">
+  <description>
+    The biblade drive controller transforms linear and angular velocity messages into signals for each wheel(s) for a biblade drive robot.
+  </description>
+  </class>
+</library>
